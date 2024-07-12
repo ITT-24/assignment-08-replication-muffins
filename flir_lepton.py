@@ -61,7 +61,7 @@ class FlirLepton:
     def __init__(self, node=None):
         self.node = node
         self.started = False
-        self.read_lock = threading.Lock()
+        #self.read_lock = threading.Lock()
 
         self.PTR_PY_FRAME_CALLBACK = CFUNCTYPE(None, POINTER(uvc_frame), c_void_p, )(self.py_frame_callback)
 
@@ -274,6 +274,7 @@ class FlirLepton:
 
                 #self.set_ffc(device_handle, 0)
                 self.perform_manual_ffc(device_handle)
+                #self.set_gain_mode(device_handle, 0)
 
                 try:
                     num_frame = 0
@@ -298,9 +299,9 @@ class FlirLepton:
 
                         img = self.raw_to_8bit(data)
 
-                        print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
+                        #print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
 
-                        out.write(img)
+                        #out.write(img)
                         img = self.display_temperature(img, minVal, minLoc, (255, 0, 0))  # Lowest Temp
                         img = self.display_temperature(img, maxVal, maxLoc, (0, 0, 255))  # Highest Temp
 
@@ -314,31 +315,31 @@ class FlirLepton:
                         # plt.draw()
                         # plt.pause(0.001)
 
-                        with self.read_lock:
-                            self.frame = img
+                        #with self.read_lock: TODO: enable?
+                        self.frame = img
 
-                            if self.node is not None:
-                                self.node.publisher.publish(self.node.cv_bridge.cv2_to_imgmsg(self.frame, "passthrough"))
-                            if self.DEBUG_MODE:
-                                cv2.imwrite("TESTTEST.png", img)
+                        if self.node is not None:
+                            self.node.publisher.publish(self.node.cv_bridge.cv2_to_imgmsg(self.frame, "passthrough"))
+                        if self.DEBUG_MODE:
+                            cv2.imwrite("TESTTEST.png", img)
 
-                                cv2.imshow('Flir Lepton 3.5', img)
+                            cv2.imshow('Flir Lepton 3.5', img)
 
-                                # print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
+                            # print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
 
-                                # out.write(img)
+                            # out.write(img)
 
-                                key = cv2.waitKey(delay=1)
-                                if key == ord('q') or key == 27:
-                                    break
-                                elif key == 32:
-                                    self.perform_manual_ffc(device_handle)
+                            key = cv2.waitKey(delay=1)
+                            if key == ord('q') or key == 27:
+                                break
+                            elif key == 32:
+                                self.perform_manual_ffc(device_handle)
                         
-                        if time.time() - start_time >= video_duration:
-                            break
+                        #if time.time() - start_time >= video_duration:
+                        #    break
 
-                    out.release()
-                    print("RELEASE")
+                    #out.release()
+                    #print("RELEASE")
                     cv2.destroyAllWindows()
                 finally:
                     libuvc.uvc_stop_streaming(device_handle)
@@ -348,8 +349,8 @@ class FlirLepton:
             libuvc.uvc_exit(context)
 
     def get_last_frame(self):
-        with self.read_lock:
-            return self.frame
+        #with self.read_lock:
+        return self.frame
 
     def stop(self):
         if self.started:
