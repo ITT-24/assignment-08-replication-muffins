@@ -18,6 +18,34 @@ import threading
 import time
 import matplotlib.pyplot as plt
 
+#-----VIDEO--------------
+
+# Setup for video writer
+frame_width = 1200
+frame_height = 800
+fps = 10  # Frames per second
+video_duration = 30  # Duration in seconds
+video_filename = 'infrared_video_grey.avi'
+
+# Define the codec and create VideoWriter object
+fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+out = cv2.VideoWriter(video_filename, fourcc, fps, (frame_width, frame_height))
+#out = cv2.VideoWriter(video_filename, -1, fps, (frame_width, frame_height))
+
+# Check if the video writer object was successfully created
+print("ZZZZ")
+if not out.isOpened():
+    print("Error: Could not open video writer")
+    exit()
+
+# Calculate the number of frames to capture
+num_frames_to_capture = fps * video_duration
+num_frame = 0
+
+start_time = time.time()
+
+#-----VIDEO--------------
+
 
 class FlirLepton:
     FRAMES_TO_WAIT_WARM_UP = 100
@@ -47,7 +75,7 @@ class FlirLepton:
         cv2.normalize(data, data, 0, 65535, cv2.NORM_MINMAX)
         np.right_shift(data, 8, data)
         return cv2.cvtColor(np.uint8(data), cv2.COLOR_GRAY2RGB)
-        # return np.uint8(data)
+        #return np.uint8(data)
 
     # Source: https://github.com/Kheirlb/purethermal1-uvc-capture
     def perform_manual_ffc(self, device_handle):
@@ -178,6 +206,8 @@ class FlirLepton:
         if frame.contents.data_bytes != (2 * frame.contents.width * frame.contents.height):
             return
 
+        #cv2.imwrite("FRAME.png", frame)
+
         if not self.queue.full():
             self.queue.put(data)
 
@@ -227,9 +257,7 @@ class FlirLepton:
                     print("device does not support Y16")
                     exit(1)
                 for form in frame_formats:
-                    print("KKK")
                     print(form.wWidth, form.wHeight)
-                print("HIIIII")
                 print(frame_formats)
 
                 res = libuvc.uvc_get_stream_ctrl_format_size(device_handle, byref(ctrl), UVC_FRAME_FORMAT_UYVY,
@@ -237,14 +265,14 @@ class FlirLepton:
                                                        int(1e7 / frame_formats[0].dwDefaultFrameInterval)
                                                        )
                 time.sleep(1)
-                print("VVV")
-                print(res)
+                #print(res)
 
                 res = libuvc.uvc_start_streaming(device_handle, byref(ctrl), self.PTR_PY_FRAME_CALLBACK, None, 0)
                 if res < 0:
                     print("uvc_start_streaming failed: {0}".format(res))
                     exit(1)
 
+                #self.set_ffc(device_handle, 0)
                 self.perform_manual_ffc(device_handle)
 
                 try:
@@ -254,11 +282,9 @@ class FlirLepton:
                         num_frame += 1
                         print('Frame:', num_frame)
 
-                        #if num_frame % 500 == 0:
-                        #    self.perform_manual_ffc(device_handle)
+                        # if num_frame % 500 == 0:
+                        #     self.perform_manual_ffc(device_handle) #TODO: enable
                         data = self.queue.get(True, timeout=5)
-                        print("HII")
-                        print(data)
                         if data is None:
                             print("no data")
                             break
@@ -271,13 +297,14 @@ class FlirLepton:
                         cv2.imwrite("TEST.png", data)
 
                         img = self.raw_to_8bit(data)
+
+                        print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
+
+                        out.write(img)
                         img = self.display_temperature(img, minVal, minLoc, (255, 0, 0))  # Lowest Temp
                         img = self.display_temperature(img, maxVal, maxLoc, (0, 0, 255))  # Highest Temp
 
                         img = cv2.LUT(self.raw_to_8bit(data), self.generate_colour_map())
-
-                        print ("HUUU")
-                        print(img)
 
                         ##my code
                         # plt.ion()  # Interactive mode on
@@ -293,19 +320,25 @@ class FlirLepton:
                             if self.node is not None:
                                 self.node.publisher.publish(self.node.cv_bridge.cv2_to_imgmsg(self.frame, "passthrough"))
                             if self.DEBUG_MODE:
-                                print("Sonne")
                                 cv2.imwrite("TESTTEST.png", img)
 
                                 cv2.imshow('Flir Lepton 3.5', img)
 
-                                print("Mond")
+                                # print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
+
+                                # out.write(img)
 
                                 key = cv2.waitKey(delay=1)
                                 if key == ord('q') or key == 27:
                                     break
                                 elif key == 32:
                                     self.perform_manual_ffc(device_handle)
+                        
+                        if time.time() - start_time >= video_duration:
+                            break
 
+                    out.release()
+                    print("RELEASE")
                     cv2.destroyAllWindows()
                 finally:
                     libuvc.uvc_stop_streaming(device_handle)
