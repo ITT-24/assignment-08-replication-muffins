@@ -17,32 +17,33 @@ from queue import Queue
 import threading
 import time
 import matplotlib.pyplot as plt
+from breath_methods import *
 
 #-----VIDEO--------------
 
-# Setup for video writer
-frame_width = 1200
-frame_height = 800
-fps = 10  # Frames per second
-video_duration = 30  # Duration in seconds
-video_filename = 'infrared_video_grey.avi'
+# # Setup for video writer
+# frame_width = 1200
+# frame_height = 800
+# fps = 10  # Frames per second
+# video_duration = 30  # Duration in seconds
+# video_filename = 'infrared_video_grey.avi'
 
-# Define the codec and create VideoWriter object
-fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-out = cv2.VideoWriter(video_filename, fourcc, fps, (frame_width, frame_height))
-#out = cv2.VideoWriter(video_filename, -1, fps, (frame_width, frame_height))
+# # Define the codec and create VideoWriter object
+# #fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+# #out = cv2.VideoWriter(video_filename, fourcc, fps, (frame_width, frame_height))
+# #out = cv2.VideoWriter(video_filename, -1, fps, (frame_width, frame_height))
 
-# Check if the video writer object was successfully created
-print("ZZZZ")
-if not out.isOpened():
-    print("Error: Could not open video writer")
-    exit()
+# # Check if the video writer object was successfully created
+# # print("ZZZZ")
+# # if not out.isOpened():
+# #     print("Error: Could not open video writer")
+# #     exit()
 
-# Calculate the number of frames to capture
-num_frames_to_capture = fps * video_duration
-num_frame = 0
+# # Calculate the number of frames to capture
+# num_frames_to_capture = fps * video_duration
+# num_frame = 0
 
-start_time = time.time()
+# start_time = time.time()
 
 #-----VIDEO--------------
 
@@ -64,6 +65,14 @@ class FlirLepton:
         #self.read_lock = threading.Lock()
 
         self.PTR_PY_FRAME_CALLBACK = CFUNCTYPE(None, POINTER(uvc_frame), c_void_p, )(self.py_frame_callback)
+
+        #----------------------------------------------BREATH DETECTION----------------------------------------
+        self.avg_temps = []  # Store average temperatures of coolest points
+        self.threshold = None  # Initial threshold is None
+        self.start_time = time.time()
+
+        self.breath_status = None
+        self.status_start_time = time.time()
 
 
     # Convert Kelvin to Celcius
@@ -197,6 +206,21 @@ class FlirLepton:
         cv2.line(img, (x, y - 2), (x, y + 2), color, 1)
         return img
 
+    # BREATH DETECTION
+    def update_breath_status(self, avg_temp):
+        if self.threshold is None:
+            return
+
+        if avg_temp > self.threshold:
+            new_status = "exhale"
+        else:
+            new_status = "inhale"
+
+        if new_status != self.breath_status:
+            duration = time.time() - self.status_start_time
+            print(f"Breath status: {self.breath_status}, Duration: {duration:.2f} seconds")
+            self.breath_status = new_status
+            self.status_start_time = time.time()
 
     def py_frame_callback(self, frame, userptr):
         array_pointer = cast(frame.contents.data, POINTER(c_uint16 * (frame.contents.width * frame.contents.height)))
@@ -220,6 +244,7 @@ class FlirLepton:
             #self.thread = threading.Thread(target=self.__update, args=())
             #thread.daemon = True #TODO: comment
             #self.thread.start()
+            self.start_time = time.time() #BREATH DETECTION
             self.__update()
             #self.window.mainloop()
             return self
@@ -293,6 +318,24 @@ class FlirLepton:
                         # Original resolution is 160x120px
                         # data = cv2.resize(data[:,:], (640, 480))
                         data = cv2.resize(data[:, :], (1200, 800))
+
+                        # --------------------------------------------BREATH DETECTION-----------------------------------------------------
+                        coolest_points = get_coolest_points_and_temperatures(data)
+                        avg_coolest_points = calculate_average_temperature(coolest_points)
+
+                        # Store the average temperature of the coolest points
+                        self.avg_temps.append(avg_coolest_points)
+
+                        if time.time() - self.start_time >= 6:
+                            # Calculate the average of averages every 6 seconds
+                            self.threshold = np.mean(self.avg_temps)
+                            print(f"Neuer Schwellenwert: {self.threshold:.2f} °C")
+                            self.avg_temps = []
+                            self.start_time = time.time()  # Reset the timer
+
+                        self.update_breath_status(avg_coolest_points)
+                        # -------------------------------------------------------------------------------------------------------------------
+
                         minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
 
                         cv2.imwrite("TEST.png", data)
