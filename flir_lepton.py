@@ -18,6 +18,7 @@ import threading
 import time
 import matplotlib.pyplot as plt
 from breath_methods import *
+from face_detection import *
 
 #-----VIDEO--------------
 
@@ -81,9 +82,10 @@ class FlirLepton:
 
     # Convert RAW sensor data to an 8bit image
     def raw_to_8bit(self, data):
-        cv2.normalize(data, data, 0, 65535, cv2.NORM_MINMAX)
-        np.right_shift(data, 8, data)
-        return cv2.cvtColor(np.uint8(data), cv2.COLOR_GRAY2RGB)
+        data_new = data.copy()
+        cv2.normalize(data_new, data_new, 0, 65535, cv2.NORM_MINMAX)
+        np.right_shift(data_new, 8, data_new)
+        return cv2.cvtColor(np.uint8(data_new), cv2.COLOR_GRAY2RGB)
         #return np.uint8(data)
 
     # Source: https://github.com/Kheirlb/purethermal1-uvc-capture
@@ -200,6 +202,7 @@ class FlirLepton:
 
     def display_temperature(self, img, val_k, loc, color):
         val = self.kelvin_to_celcius(val_k)
+        print("TEMP:", val)
         cv2.putText(img, "{0:.1f} Celsius".format(val), loc, cv2.FONT_HERSHEY_SIMPLEX, 2, color, 1)
         x, y = loc
         cv2.line(img, (x - 2, y), (x + 2, y), color, 1)
@@ -216,8 +219,12 @@ class FlirLepton:
         else:
             new_status = "inhale"
 
+        print("BREATHING: ", self.breath_status)
+
         if new_status != self.breath_status:
             duration = time.time() - self.status_start_time
+            if duration < 0.5 and duration > 0.2:
+                print("SHORT " + self.breath_status) #TODO: Add Mouse click
             print(f"Breath status: {self.breath_status}, Duration: {duration:.2f} seconds")
             self.breath_status = new_status
             self.status_start_time = time.time()
@@ -306,21 +313,30 @@ class FlirLepton:
 
                     while self.started:
                         num_frame += 1
-                        print('Frame:', num_frame)
+                        #print('Frame:', num_frame) #TODO: enable
 
                         # if num_frame % 500 == 0:
                         #     self.perform_manual_ffc(device_handle) #TODO: enable
                         data = self.queue.get(True, timeout=5)
                         if data is None:
                             print("no data")
-                            break
+                            break         
 
                         # Original resolution is 160x120px
                         # data = cv2.resize(data[:,:], (640, 480))
                         data = cv2.resize(data[:, :], (1200, 800))
+                        
+                        img = self.raw_to_8bit(data)
+
+                        mouth_top_left, mouth_bottom_right = make_face_detection(img)
+                        cropped_mouth = data[mouth_top_left[1]:mouth_bottom_right[1], mouth_top_left[0]:mouth_bottom_right[0]]
+                        #print(cropped_mouth)
+
+                        img = self.raw_to_8bit(cropped_mouth)
+
 
                         # --------------------------------------------BREATH DETECTION-----------------------------------------------------
-                        coolest_points = get_coolest_points_and_temperatures(data)
+                        coolest_points = get_coolest_points_and_temperatures(cropped_mouth)
                         avg_coolest_points = calculate_average_temperature(coolest_points)
 
                         # Store the average temperature of the coolest points
@@ -336,19 +352,19 @@ class FlirLepton:
                         self.update_breath_status(avg_coolest_points)
                         # -------------------------------------------------------------------------------------------------------------------
 
-                        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
+                        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(cropped_mouth)
 
-                        cv2.imwrite("TEST.png", data)
+                        #cv2.imwrite("TEST.png", data)
 
-                        img = self.raw_to_8bit(data)
+                        #img = self.raw_to_8bit(data)
 
                         #print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
 
                         #out.write(img)
-                        img = self.display_temperature(img, minVal, minLoc, (255, 0, 0))  # Lowest Temp
-                        img = self.display_temperature(img, maxVal, maxLoc, (0, 0, 255))  # Highest Temp
+                        #img_n = self.display_temperature(img, minVal, minLoc, (255, 0, 0))  # Lowest Temp
+                        #img_n = self.display_temperature(img, maxVal, maxLoc, (0, 0, 255))  # Highest Temp
 
-                        img = cv2.LUT(self.raw_to_8bit(data), self.generate_colour_map())
+                        # img = cv2.LUT(self.raw_to_8bit(data), self.generate_colour_map())
 
                         ##my code
                         # plt.ion()  # Interactive mode on
@@ -364,7 +380,7 @@ class FlirLepton:
                         if self.node is not None:
                             self.node.publisher.publish(self.node.cv_bridge.cv2_to_imgmsg(self.frame, "passthrough"))
                         if self.DEBUG_MODE:
-                            cv2.imwrite("TESTTEST.png", img)
+                            #cv2.imwrite("TESTTEST.png", img)
 
                             cv2.imshow('Flir Lepton 3.5', img)
 

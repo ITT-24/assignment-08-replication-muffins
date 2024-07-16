@@ -6,8 +6,8 @@ mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, min_detection_confidence=0.5)
 mp_drawing = mp.solutions.drawing_utils
 
-VIDEO_PATH = 'infrared_video_grey.avi'
-cap = cv2.VideoCapture(VIDEO_PATH)
+#VIDEO_PATH = 'infrared_video_grey.avi'
+#cap = cv2.VideoCapture(VIDEO_PATH)
 
 # set to 100 -> shoudl be enough for meassuring
 def get_center_square_pixels(center_x, center_y, half_size):
@@ -28,39 +28,58 @@ def print_pixels_around_center(frame, center_x, center_y, half_size):
     pixels = get_center_square_pixels(center_x, center_y, half_size)
     for pixel in pixels:
         px_id = frame[pixel[1], pixel[0]]
-        print(f"Pixel at ({pixel[0]}, {pixel[1]}): {px_id}")
+        # print(f"Pixel at ({pixel[0]}, {pixel[1]}): {px_id}")
 
 
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
+current_mouth_top_left= (0, 0)
+current_mouth_bottom_right = (1200, 800)
 
+
+#while cap.isOpened():
+def make_face_detection(frame_bw):
+    global current_mouth_top_left, current_mouth_bottom_right
+    #ret, frame = cap.read()
+    #if not ret:
+    #    break
+    #print("SHAPE:" , frame.shape)
+    frame = cv2.cvtColor(frame_bw, cv2.COLOR_BGR2RGB)
     result = face_mesh.process(frame)
 
     if result.multi_face_landmarks:
         for face_landmarks in result.multi_face_landmarks:
-            # get the coordinates of nose tip
+        # get the coordinates of nose tip
+           # get the coordinates of nose tip
             nose_tip = face_landmarks.landmark[1]  # Nose tip index
             nose_x, nose_y = int(nose_tip.x * frame.shape[1]), int(nose_tip.y * frame.shape[0])
 
-            # cross and label for  nose tip
+            # cross and label for nose tip
             cv2.line(frame, (nose_x - 10, nose_y), (nose_x + 10, nose_y), (0, 255, 0), 2)
             cv2.line(frame, (nose_x, nose_y - 10), (nose_x, nose_y + 10), (0, 255, 0), 2)
             cv2.putText(frame, 'Nose Tip', (nose_x + 5, nose_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-
-            # square around nose tip
-            nose_half_size = 5
-            """ draw_center_square(frame, nose_x, nose_y, nose_half_size, (0, 255, 255)) """
-
-            print("Nose Tip Square:")
-            print_pixels_around_center(frame, nose_x, nose_y, nose_half_size)
 
             # estimate coordinates for nose holes based on the nose tip
             nose_hole_distance_x = 30  # horizontal distance from nose tip to nose hole
             nose_hole_distance_y = 20  # vertical distance from nose tip to nose hole
             left_nose_x, left_nose_y = nose_x - nose_hole_distance_x, nose_y + nose_hole_distance_y
             right_nose_x, right_nose_y = nose_x + nose_hole_distance_x, nose_y + nose_hole_distance_y
+
+            # calculate the top left and bottom right coordinates for the combined rectangle
+            top_left_x = min(left_nose_x, right_nose_x) - 20
+            top_left_y = min(left_nose_y, right_nose_y) - 20
+            bottom_right_x = max(left_nose_x, right_nose_x) + 20
+            bottom_right_y = max(left_nose_y, right_nose_y) + 20
+
+            # move the rectangle down by a certain amount (e.g., 10 pixels)
+            move_down_by = 10
+            top_left_y += move_down_by
+            bottom_right_y += move_down_by
+
+            # draw the combined rectangle
+            #cv2.rectangle(frame, (top_left_x, top_left_y), (bottom_right_x, bottom_right_y), (0, 0, 255), 2)
+
+            current_mouth_top_left = (top_left_x, top_left_y)
+            current_mouth_bottom_right = (bottom_right_x, bottom_right_y)
+            #return current_mouth_top_left, current_mouth_bottom_right #TODO: ENABLE FOR NOSE
 
             # draw rectangles around the estimated nose holes
             nose_hole_size = 40
@@ -79,12 +98,12 @@ while cap.isOpened():
             draw_center_square(frame, left_nose_x, left_nose_y, nose_hole_half_size, (0, 255, 255))
             draw_center_square(frame, right_nose_x, right_nose_y, nose_hole_half_size, (0, 255, 255))
 
-            # print pixel IDs around the nose holes
-            print("Left Nose Hole Square:")
-            print_pixels_around_center(frame, left_nose_x, left_nose_y, nose_hole_half_size)
+            # # print pixel IDs around the nose holes
+            # print("Left Nose Hole Square:")
+            # print_pixels_around_center(frame, left_nose_x, left_nose_y, nose_hole_half_size)
 
-            print("Right Nose Hole Square:")
-            print_pixels_around_center(frame, right_nose_x, right_nose_y, nose_hole_half_size)
+            # print("Right Nose Hole Square:")
+            # print_pixels_around_center(frame, right_nose_x, right_nose_y, nose_hole_half_size)
 
             # coordinates for mouth
             mouth_indices = [61, 291, 78, 308, 191, 415, 80, 81, 82, 13, 312, 311, 310, 415]
@@ -101,33 +120,38 @@ while cap.isOpened():
             min_mouth_y -= vertical_extension
             max_mouth_y += vertical_extension
 
-            mouth_top_left = (min_mouth_x, min_mouth_y)
-            mouth_bottom_right = (max_mouth_x, max_mouth_y)
-            cv2.rectangle(frame, mouth_top_left, mouth_bottom_right, (255, 0, 0), 2)
+            x_distance = max_mouth_x - min_mouth_x
+            y_distance = max_mouth_y - min_mouth_y
 
-            # calculate the center of the mouth square
-            mouth_center_x = (min_mouth_x + max_mouth_x) // 2
-            mouth_center_y = (min_mouth_y + max_mouth_y) // 2
+            current_mouth_top_left = (min_mouth_x + x_distance//3,  min_mouth_y + y_distance//3)
+            current_mouth_bottom_right = (max_mouth_x - x_distance//3, max_mouth_y - y_distance//3)
+            
+            # cv2.rectangle(frame, current_mouth_top_left, current_mouth_bottom_right, (255, 0, 0), 2)
 
-            # draw a cross 
-            cv2.line(frame, (mouth_center_x - 10, mouth_center_y), (mouth_center_x + 10, mouth_center_y), (0, 255, 0), 2)
-            cv2.line(frame, (mouth_center_x, mouth_center_y - 10), (mouth_center_x, mouth_center_y + 10), (0, 255, 0), 2)
-            cv2.putText(frame, 'Mouth', (mouth_center_x + 5, mouth_center_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            # # calculate the center of the mouth square
+            # mouth_center_x = (min_mouth_x + max_mouth_x) // 2
+            # mouth_center_y = (min_mouth_y + max_mouth_y) // 2
 
-            # draw square around the central 100 pixels of the mouth
-            # half of the side length of the square that includes 100 pixels
-            mouth_half_size = 5  
-            draw_center_square(frame, mouth_center_x, mouth_center_y, mouth_half_size, (0, 255, 255))
+            # # draw a cross 
+            # cv2.line(frame, (mouth_center_x - 10, mouth_center_y), (mouth_center_x + 10, mouth_center_y), (0, 255, 0), 2)
+            # cv2.line(frame, (mouth_center_x, mouth_center_y - 10), (mouth_center_x, mouth_center_y + 10), (0, 255, 0), 2)
+            # cv2.putText(frame, 'Mouth', (mouth_center_x + 5, mouth_center_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-            print("Mouth Square:")
-            print_pixels_around_center(frame, mouth_center_x, mouth_center_y, mouth_half_size)
+            # # draw square around the central 100 pixels of the mouth
+            # # half of the side length of the square that includes 100 pixels
+            # mouth_half_size = 5  
+            # draw_center_square(frame, mouth_center_x, mouth_center_y, mouth_half_size, (0, 255, 255))
 
-            # reduce CPU load
-            time.sleep(0.1)
+            # print("Mouth Square:")
+            # print_pixels_around_center(frame, mouth_center_x, mouth_center_y, mouth_half_size)
+
+            # # reduce CPU load
+            # time.sleep(0.1)
+    return current_mouth_top_left, current_mouth_bottom_right
 
     cv2.imshow('Mouth and Nose Detection', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        pass
 
-cap.release()
+# cap.release()
 cv2.destroyAllWindows()
