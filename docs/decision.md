@@ -7,6 +7,7 @@
 This paper explores the potential of using smart watch motion sensors to capture letters drawn in the air, enabling faster text input without a physical device.
 
 **Why We Did Not Choose It:**
+
 Although this idea was innovative and relatively simple to implement with available resources, it was ultimately our second choice. The precision and consistency of motion capture can be challenging, and the need for extensive machine learning to accurately recognize the drawn characters—especially with variations in writing styles—added complexity that could complicate troubleshooting and system reliability. Additionally, we lacked the necessary data, which we would have had to collect ourselves. Nonetheless, it was a doable project, and had we not chosen to pursue gaze breath, this would have been our preferred option.
 
 ### 2. Paper Title: "Gaze Breath: Combining Eye Tracking and Breath Input for Real-time Interaction"
