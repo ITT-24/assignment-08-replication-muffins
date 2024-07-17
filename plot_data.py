@@ -1,0 +1,21 @@
+import matplotlib.pyplot as plt
+
+# format: tuple -> time, temperature
+def plot_temperature(data_points, thresholds=None):
+    times, temperatures = zip(*data_points)
+    
+    plt.figure(figsize=(10, 5))
+    plt.plot(times, temperatures, marker='x', linestyle='-', color='b', label=f'Mean Temperature in Kelvin')
+    
+    if thresholds is not None:
+        time, threshold = zip(*thresholds)
+        plt.plot(time, threshold, color='r', linestyle='--', label=f'Threshold in Kelvin')
+    
+    plt.xlabel('Time in s')
+    plt.ylabel('Temperature in Kelvin')
+    plt.title('Breath Rhythm')
+    plt.legend
+    
+    plt.grid(True)
+    plt.legend()
+    plt.show()

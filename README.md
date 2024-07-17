@@ -18,6 +18,9 @@ In the end we decieded to rebuild and improve on the paper **"Gaze Breath: Combi
 ## Development Documentation
 We documented our thoughts and daily process. If you want to see out process you can read here in the **[documentation](https://github.com/ITT-24/assignment-08-replication-muffins/tree/master/docs/diary.md).**
 
+**Breathing Overview:**
+![Mouth Breathing](/docs/images/mouth_breathing.png)
+
 # Troubleshooting:
 - The camera sometimes goes into sleep mode → the queue is empty → just restart the program and it will work.
 - To recalibrate the image press the space button and face the camera to blank and more or less cold surface

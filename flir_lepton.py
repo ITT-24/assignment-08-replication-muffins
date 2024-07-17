@@ -19,6 +19,7 @@ import time
 import matplotlib.pyplot as plt
 from breath_methods import *
 from face_detection import *
+from plot_data import plot_temperature
 
 #-----VIDEO--------------
 
@@ -48,6 +49,8 @@ from face_detection import *
 
 #-----VIDEO--------------
 
+mean_temps_time = []
+thresholds = []
 
 class FlirLepton:
     FRAMES_TO_WAIT_WARM_UP = 100
@@ -77,8 +80,8 @@ class FlirLepton:
 
 
     # Convert Kelvin to Celcius
-    def kelvin_to_celcius(self, val):
-        return (val - 27315) / 100.0
+    # def kelvin_to_celcius(self, val):
+        # return (val - 27315) / 100.0
 
     # Convert RAW sensor data to an 8bit image
     def raw_to_8bit(self, data):
@@ -257,6 +260,8 @@ class FlirLepton:
             return self
 
     def __update(self):
+        global mean_temps_time, thresholds
+        
         context = POINTER(uvc_context)()
         device = POINTER(uvc_device)()
         device_handle = POINTER(uvc_device_handle)()
@@ -310,7 +315,8 @@ class FlirLepton:
 
                 try:
                     num_frame = 0
-
+                    start_time = time.time()
+                    
                     while self.started:
                         num_frame += 1
                         #print('Frame:', num_frame) #TODO: enable
@@ -338,6 +344,9 @@ class FlirLepton:
                         # --------------------------------------------BREATH DETECTION-----------------------------------------------------
                         coolest_points = get_coolest_points_and_temperatures(cropped_mouth)
                         avg_coolest_points = calculate_average_temperature(coolest_points)
+                        mean_temps_time.append((float(time.time() - start_time), avg_coolest_points))
+                        thresholds.append((float(time.time() - start_time), self.threshold))
+                        
 
                         # Store the average temperature of the coolest points
                         self.avg_temps.append(avg_coolest_points)
@@ -396,7 +405,8 @@ class FlirLepton:
                         
                         #if time.time() - start_time >= video_duration:
                         #    break
-
+                        if cv2.waitKey(1) == ord('q'):
+                            self.started = False
                     #out.release()
                     #print("RELEASE")
                     cv2.destroyAllWindows()
@@ -414,14 +424,16 @@ class FlirLepton:
     def stop(self):
         if self.started:
             self.started = False
+        
             #self.thread.join()
 
 
 def main():
+    global mean_temps_time, thresholds
     flir = FlirLepton()
     flir.start()
+    plot_temperature(mean_temps_time, thresholds)
     flir.stop()
-    flir.start()
 
 if __name__ == '__main__':
     main()
