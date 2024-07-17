@@ -381,15 +381,8 @@ class FlirLepton:
                         #img_n = self.display_temperature(img, minVal, minLoc, (255, 0, 0))  # Lowest Temp
                         #img_n = self.display_temperature(img, maxVal, maxLoc, (0, 0, 255))  # Highest Temp
 
-                        # img = cv2.LUT(self.raw_to_8bit(data), self.generate_colour_map())
-
-                        ##my code
-                        # plt.ion()  # Interactive mode on
-                        # fig, ax = plt.subplots()
-                        # im = ax.imshow(np.zeros((1200, 800)), cmap='gray')
-                        # im.set_data(img)
-                        # plt.draw()
-                        # plt.pause(0.001)
+                        img_colour = cv2.LUT(self.raw_to_8bit(data), self.generate_colour_map())
+                        make_face_detection(img_colour)
 
                         #with self.read_lock: TODO: enable?
                         self.frame = img
@@ -399,7 +392,7 @@ class FlirLepton:
                         if self.DEBUG_MODE:
                             #cv2.imwrite("TESTTEST.png", img)
 
-                            cv2.imshow('Flir Lepton 3.5', img)
+                            cv2.imshow('Flir Lepton 3.5', img_colour)
 
                             # print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
 
