@@ -79,3 +79,28 @@
   - Focus on measuring temperature changes at specific points.
   - Improve detection algorithms for exhale and inhale.
   - Consider using a better thermal camera for more accurate results.
+
+
+  ## July 16, 2024
+
+### Aufzeichnung Mund:
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3e31c7c9-b160-4709-86e7-fa960e14570d/ac062451-1b48-447b-8d1d-f6de2c5a720a/Untitled.png)
+
+[Breathing Data Mouth](https://www.notion.so/Breathing-Data-Mouth-2310d58017c3415c832c851aa312973a?pvs=21)
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3e31c7c9-b160-4709-86e7-fa960e14570d/306df72e-b15e-448a-b574-db37b9a36b4e/Untitled.png)
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3e31c7c9-b160-4709-86e7-fa960e14570d/1572c41a-f38c-409d-b7d7-7feaa0d765a3/Untitled.png)
+
+### Aufzeichnung Nase:
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/3e31c7c9-b160-4709-86e7-fa960e14570d/a269ea0f-64c0-4670-b811-d2097e735eb8/Untitled.png)
+
+[Breth Data Nose](https://www.notion.so/Breth-Data-Nose-4bc5c65891754c2fbf44cfb3ed8585d5?pvs=21)
+
+---
+
+→ Mund ist deutlich genauer!
+
+- Daten sehen richtig aus und exhale und inhale werden an sich gut erkannt

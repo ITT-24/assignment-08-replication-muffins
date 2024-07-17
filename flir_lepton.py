@@ -336,7 +336,6 @@ class FlirLepton:
 
                         mouth_top_left, mouth_bottom_right = make_face_detection(img)
                         cropped_mouth = data[mouth_top_left[1]:mouth_bottom_right[1], mouth_top_left[0]:mouth_bottom_right[0]]
-                        #print(cropped_mouth)
 
                         img = self.raw_to_8bit(cropped_mouth)
 

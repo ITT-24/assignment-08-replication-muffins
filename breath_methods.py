@@ -3,8 +3,8 @@ import cv2
 import matplotlib.pyplot as plt
 
 def kelvin_to_celsius(val):
-    #return (val - 27315) / 100.0
-    return val
+    # return (val - 27315) / 100.0
+    # return val
     return (val - 27315) / 1500.0
 
 def get_coolest_points_and_temperatures(data):
