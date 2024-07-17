@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 from breath_methods import *
 from face_detection import *
 from plot_data import plot_temperature
+from pynput.mouse import Button, Controller
 
 #-----VIDEO--------------
 
@@ -48,6 +49,8 @@ from plot_data import plot_temperature
 # start_time = time.time()
 
 #-----VIDEO--------------
+
+mouse = Controller()
 
 mean_temps_time = []
 thresholds = []
@@ -226,8 +229,12 @@ class FlirLepton:
 
         if new_status != self.breath_status:
             duration = time.time() - self.status_start_time
-            if duration < 0.5 and duration > 0.2:
-                print("SHORT " + self.breath_status) #TODO: Add Mouse click
+            if duration < 0.5 and duration > 0.2 and self.breath_status == "exhale":
+                print("SHORT " + self.breath_status) 
+                #mouse.click(Button.left) #TODO: Add Mouse click
+            elif duration < 0.5 and duration > 0.2 and self.breath_status == "inhale":
+                print("SHORT " + self.breath_status) 
+                #mouse.click(Button.right) #TODO: Add Mouse click
             print(f"Breath status: {self.breath_status}, Duration: {duration:.2f} seconds")
             self.breath_status = new_status
             self.status_start_time = time.time()
@@ -352,10 +359,12 @@ class FlirLepton:
 
                         if time.time() - self.start_time >= 6:
                             # Calculate the average of averages every 6 seconds
-                            self.threshold = np.mean(self.avg_temps)
-                            print(f"Neuer Schwellenwert: {self.threshold:.2f} °C")
-                            self.avg_temps = []
-                            self.start_time = time.time()  # Reset the timer
+                            min_max_distance = np.max(self.avg_temps) - np.min(self.avg_temps)
+                            if min_max_distance > 0.5 and min_max_distance < 20:
+                                self.threshold = np.mean(self.avg_temps)
+                                print(f"Neuer Schwellenwert: {self.threshold:.2f} °C")
+                                self.avg_temps = []
+                                self.start_time = time.time()  # Reset the timer
 
                         self.update_breath_status(avg_coolest_points)
                         # -------------------------------------------------------------------------------------------------------------------
