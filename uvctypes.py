@@ -7,7 +7,8 @@ import platform
 import os
 
 try:
-    lib_path = "/Users/luca/Desktop/A8/assignment-08-replication-muffins/libuvc/build/libuvc.dylib"
+    #lib_path = "/Users/luca/Desktop/A8/assignment-08-replication-muffins/libuvc/build/libuvc.dylib" #TODO: change this
+    lib_path = "/Users/emmasophie/Desktop/Studium/Master/2. Semester/ITT/10. Tangible Interaction/Assingment 8 - Replication/assignment-08-replication-muffins/libuvc/build/libuvc.dylib"
     if not os.path.exists(lib_path):
         print(f"Die Datei {lib_path} wurde nicht gefunden.")
     #libuvc = cdll.LoadLibrary("libuvc.dylib")

@@ -21,6 +21,7 @@ from breath_methods import *
 from face_detection import *
 from plot_data import plot_temperature
 from pynput.mouse import Button, Controller
+import sys
 
 #-----VIDEO--------------
 
@@ -50,6 +51,10 @@ from pynput.mouse import Button, Controller
 
 #-----VIDEO--------------
 
+face_part = "mouth"
+if len(sys.argv) > 1:
+    face_part = str(sys.argv[1])
+
 mouse = Controller()
 
 mean_temps_time = []
@@ -66,6 +71,12 @@ class FlirLepton:
 
     frame = None
 
+    SHORT_BREATH_THRESHOLD = 0.5 #Celsius, like in paper
+    IGNORE_FLUCTUATION_THRESHOLD = 0.2 #Celsius
+    LONG_BREATH_THRESHOLD = 3.0 #Celsius, like in paper
+
+    THRESHOLD_UPDATE_TIME = 6 #Seconds
+
     def __init__(self, node=None):
         self.node = node
         self.started = False
@@ -80,11 +91,6 @@ class FlirLepton:
 
         self.breath_status = None
         self.status_start_time = time.time()
-
-
-    # Convert Kelvin to Celcius
-    # def kelvin_to_celcius(self, val):
-        # return (val - 27315) / 100.0
 
     # Convert RAW sensor data to an 8bit image
     def raw_to_8bit(self, data):
@@ -229,16 +235,16 @@ class FlirLepton:
 
         if new_status != self.breath_status:
             duration = time.time() - self.status_start_time
-            if duration < 0.5 and duration > 0.2 and self.breath_status == "exhale":
+            if duration < self.SHORT_BREATH_THRESHOLD and duration > self.IGNORE_FLUCTUATION_THRESHOLD and self.breath_status == "exhale":
                 print("SHORT " + self.breath_status) 
                 #mouse.click(Button.left) #TODO: Add Mouse click
-            elif duration < 0.5 and duration > 0.2 and self.breath_status == "inhale":
+            elif duration < self.SHORT_BREATH_THRESHOLD and duration > self.IGNORE_FLUCTUATION_THRESHOLD and self.breath_status == "inhale":
                 print("SHORT " + self.breath_status) 
                 #mouse.click(Button.right) #TODO: Add Mouse click
-            elif duration > 3.0 and self.breath_status == "exhale":
+            elif duration > self.LONG_BREATH_THRESHOLD and self.breath_status == "exhale":
                 print("LONG " + self.breath_status) 
                 # mouse.click(Button.left) #TODO: Add Mouse click
-            elif duration > 3.0 and self.breath_status == "inhale":
+            elif duration > self.LONG_BREATH_THRESHOLD and self.breath_status == "inhale":
                 print("LONG " + self.breath_status) 
                 #mouse.click(Button.right) #TODO: Add Mouse click
             
@@ -254,8 +260,6 @@ class FlirLepton:
         if frame.contents.data_bytes != (2 * frame.contents.width * frame.contents.height):
             return
 
-        #cv2.imwrite("FRAME.png", frame)
-
         if not self.queue.full():
             self.queue.put(data)
 
@@ -266,7 +270,7 @@ class FlirLepton:
         else:
             self.started = True
             #self.thread = threading.Thread(target=self.__update, args=())
-            #thread.daemon = True #TODO: comment
+            #thread.daemon = True
             #self.thread.start()
             self.start_time = time.time() #BREATH DETECTION
             self.__update()
@@ -316,16 +320,13 @@ class FlirLepton:
                                                        int(1e7 / frame_formats[0].dwDefaultFrameInterval)
                                                        )
                 time.sleep(1)
-                #print(res)
 
                 res = libuvc.uvc_start_streaming(device_handle, byref(ctrl), self.PTR_PY_FRAME_CALLBACK, None, 0)
                 if res < 0:
                     print("uvc_start_streaming failed: {0}".format(res))
                     exit(1)
 
-                #self.set_ffc(device_handle, 0)
                 self.perform_manual_ffc(device_handle)
-                #self.set_gain_mode(device_handle, 0)
 
                 try:
                     num_frame = 0
@@ -333,10 +334,10 @@ class FlirLepton:
                     
                     while self.started:
                         num_frame += 1
-                        #print('Frame:', num_frame) #TODO: enable
+                        #print('Frame:', num_frame)
 
                         # if num_frame % 500 == 0:
-                        #     self.perform_manual_ffc(device_handle) #TODO: enable
+                        #     self.perform_manual_ffc(device_handle)
                         data = self.queue.get(True, timeout=5)
                         if data is None:
                             print("no data")
@@ -348,7 +349,7 @@ class FlirLepton:
                         
                         img = self.raw_to_8bit(data)
 
-                        mouth_top_left, mouth_bottom_right = make_face_detection(img)
+                        mouth_top_left, mouth_bottom_right = make_face_detection(img, face_part)
                         cropped_mouth = data[mouth_top_left[1]:mouth_bottom_right[1], mouth_top_left[0]:mouth_bottom_right[0]]
 
                         img = self.raw_to_8bit(cropped_mouth)
@@ -360,11 +361,10 @@ class FlirLepton:
                         mean_temps_time.append((float(time.time() - start_time), avg_coolest_points))
                         thresholds.append((float(time.time() - start_time), self.threshold))
                         
-
                         # Store the average temperature of the coolest points
                         self.avg_temps.append(avg_coolest_points)
 
-                        if time.time() - self.start_time >= 6:
+                        if time.time() - self.start_time >= self.THRESHOLD_UPDATE_TIME:
                             # Calculate the average of averages every 6 seconds
                             min_max_distance = np.max(self.avg_temps) - np.min(self.avg_temps)
                             if self.threshold is None:
@@ -381,7 +381,7 @@ class FlirLepton:
                         self.update_breath_status(avg_coolest_points)
                         # -------------------------------------------------------------------------------------------------------------------
 
-                        minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(cropped_mouth)
+                        #minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(cropped_mouth)
 
                         #cv2.imwrite("TEST.png", data)
 
@@ -389,25 +389,21 @@ class FlirLepton:
 
                         #print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
 
-                        #out.write(img)
+                        #out.write(img) # -------------- VIDEO ------------------- 
                         #img_n = self.display_temperature(img, minVal, minLoc, (255, 0, 0))  # Lowest Temp
                         #img_n = self.display_temperature(img, maxVal, maxLoc, (0, 0, 255))  # Highest Temp
 
                         img_colour = cv2.LUT(self.raw_to_8bit(data), self.generate_colour_map())
                         cv2.rectangle(img_colour, mouth_top_left, mouth_bottom_right, (0, 255, 0), 2)
-                        
 
-                        #with self.read_lock: TODO: enable?
+                        #with self.read_lock:
                         self.frame = img
 
                         if self.node is not None:
                             self.node.publisher.publish(self.node.cv_bridge.cv2_to_imgmsg(self.frame, "passthrough"))
                         if self.DEBUG_MODE:
-                            #cv2.imwrite("TESTTEST.png", img)
 
                             cv2.imshow('Flir Lepton 3.5', img_colour)
-
-                            # print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
 
                             # out.write(img) # -------------- VIDEO ------------------- 
 
@@ -416,7 +412,8 @@ class FlirLepton:
                                 break
                             elif key == 32:
                                 self.perform_manual_ffc(device_handle)
-                        
+
+                        # -------------- VIDEO -------------------
                         #if time.time() - start_time >= video_duration:
                         #    break
                         if cv2.waitKey(1) == ord('q'):
@@ -440,7 +437,6 @@ class FlirLepton:
             self.started = False
         
             #self.thread.join()
-
 
 def main():
     global mean_temps_time, thresholds

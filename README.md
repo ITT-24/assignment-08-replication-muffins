@@ -23,19 +23,27 @@ In the end we decieded to rebuild and improve on the paper **["Gaze Breath: Comb
 pip install -r requirements.txt
 ```
 
-2. Connect a thermal camera to your computer. We used the [PureThermal Mini Pro JST-SR (with FLIR Lepton 3.5](https://www.antratek.de/purethermal-mini-pro-jst-sr-with-flir-lepton-3-5)
+2. Install libuvc and change the path in uvctypes.py to the location.
 
-3. To start the code run the follwing:
+3. If you want to do mouse clicks, enable the parts marked with TODO in the flir_lepton.py file.
+
+4. Connect a thermal camera to your computer. We used the [PureThermal Mini Pro JST-SR (with FLIR Lepton 3.5](https://www.antratek.de/purethermal-mini-pro-jst-sr-with-flir-lepton-3-5)
+
+5. To start the code run the following:
 ```
-sudo python flir_lepton.py
+sudo python flir_lepton.py mouth
+```
+or, for nose breathing:
+```
+sudo python flir_lepton.py nose
 ```
 It is important to use sudo. Otherwise it is not possible to use the thermal camera.
 
-4. Before the camera is activated face it at a smooth and more or less cold surface until you can see a video.
+6. Before the camera is activated face it at a smooth and more or less cold surface until you can see a video.
 
-5. Face the camera at yourself. The camera will detect your mouth or nose (based on your choice) all by itself. 
+7. Face the camera at yourself. The camera will detect your mouth or nose (based on your choice) all by itself. 
 
-6. Look at the camera and breath normally or if you want to perform a click perform a short or long inhale or exhale
+8. Look at the camera and breath normally or if you want to perform a click perform a short or long inhale or exhale
 
 ## Evaluation
 
