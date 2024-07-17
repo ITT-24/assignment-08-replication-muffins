@@ -235,6 +235,13 @@ class FlirLepton:
             elif duration < 0.5 and duration > 0.2 and self.breath_status == "inhale":
                 print("SHORT " + self.breath_status) 
                 #mouse.click(Button.right) #TODO: Add Mouse click
+            elif duration > 3.0 and self.breath_status == "exhale":
+                print("LONG " + self.breath_status) 
+                # mouse.click(Button.left) #TODO: Add Mouse click
+            elif duration > 3.0 and self.breath_status == "inhale":
+                print("LONG " + self.breath_status) 
+                #mouse.click(Button.right) #TODO: Add Mouse click
+            
             print(f"Breath status: {self.breath_status}, Duration: {duration:.2f} seconds")
             self.breath_status = new_status
             self.status_start_time = time.time()
@@ -360,12 +367,17 @@ class FlirLepton:
                         if time.time() - self.start_time >= 6:
                             # Calculate the average of averages every 6 seconds
                             min_max_distance = np.max(self.avg_temps) - np.min(self.avg_temps)
-                            if min_max_distance > 0.5 and min_max_distance < 20:
+                            if self.threshold is None:
+                                self.threshold = np.mean(self.avg_temps) 
+                                self.avg_temps = []
+                                self.start_time = time.time()  # Reset the timer
+                            if min_max_distance > 0.5:
                                 self.threshold = np.mean(self.avg_temps)
                                 print(f"Neuer Schwellenwert: {self.threshold:.2f} °C")
                                 self.avg_temps = []
                                 self.start_time = time.time()  # Reset the timer
 
+                            print(min_max_distance)
                         self.update_breath_status(avg_coolest_points)
                         # -------------------------------------------------------------------------------------------------------------------
 
@@ -382,7 +394,8 @@ class FlirLepton:
                         #img_n = self.display_temperature(img, maxVal, maxLoc, (0, 0, 255))  # Highest Temp
 
                         img_colour = cv2.LUT(self.raw_to_8bit(data), self.generate_colour_map())
-                        make_face_detection(img_colour)
+                        cv2.rectangle(img_colour, mouth_top_left, mouth_bottom_right, (0, 255, 0), 2)
+                        
 
                         #with self.read_lock: TODO: enable?
                         self.frame = img
@@ -396,7 +409,7 @@ class FlirLepton:
 
                             # print(f"Frame shape: {img.shape}, Frame type: {img.dtype}")
 
-                            # out.write(img)
+                            # out.write(img) # -------------- VIDEO ------------------- 
 
                             key = cv2.waitKey(delay=1)
                             if key == ord('q') or key == 27:
@@ -408,7 +421,7 @@ class FlirLepton:
                         #    break
                         if cv2.waitKey(1) == ord('q'):
                             self.started = False
-                    #out.release()
+                    #out.release() # ----------------- SAVE VIDEO RECORDING -------------------------
                     #print("RELEASE")
                     cv2.destroyAllWindows()
                 finally:

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 def kelvin_to_celsius(val):
     # return (val - 27315) / 100.0
-    return (val - 27315) / 1500.0 #changed this for more realistic values
+    return (val - 27315) / 750.0 # changed this for more realistic values
 
 def get_coolest_points_and_temperatures(data):
 
@@ -34,7 +34,7 @@ def get_coolest_points_and_temperatures(data):
         cv2.circle(marked_image, (point[1], point[0]), 5, (0, 0, 255), -1)
 
     # Anzeigen des markierten Bildes
-    cv2.imshow("Bild", marked_image)
+    # cv2.imshow("Bild", marked_image)
     #plt.title("50 kälteste Punkte")
     #plt.show()
 

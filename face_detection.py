@@ -79,7 +79,7 @@ def make_face_detection(frame_bw):
 
             current_mouth_top_left = (top_left_x, top_left_y)
             current_mouth_bottom_right = (bottom_right_x, bottom_right_y)
-            #return current_mouth_top_left, current_mouth_bottom_right #TODO: ENABLE FOR NOSE
+            # return current_mouth_top_left, current_mouth_bottom_right #TODO: ENABLE FOR NOSE
 
             # draw rectangles around the estimated nose holes
             nose_hole_size = 40
@@ -87,10 +87,10 @@ def make_face_detection(frame_bw):
                           (left_nose_x + nose_hole_size // 2, left_nose_y + nose_hole_size // 2), (0, 0, 255), 2)
             cv2.rectangle(frame, (right_nose_x - nose_hole_size // 2, right_nose_y - nose_hole_size // 2),
                           (right_nose_x + nose_hole_size // 2, right_nose_y + nose_hole_size // 2), (0, 0, 255), 2)
-            cv2.line(frame, (left_nose_x - 10, left_nose_y), (left_nose_x + 10, left_nose_y), (0, 255, 0), 2)
-            cv2.line(frame, (left_nose_x, left_nose_y - 10), (left_nose_x, left_nose_y + 10), (0, 255, 0), 2)
-            cv2.line(frame, (right_nose_x - 10, right_nose_y), (right_nose_x + 10, right_nose_y), (0, 255, 0), 2)
-            cv2.line(frame, (right_nose_x, right_nose_y - 10), (right_nose_x, right_nose_y + 10), (0, 255, 0), 2)
+            # cv2.line(frame, (left_nose_x - 10, left_nose_y), (left_nose_x + 10, left_nose_y), (0, 255, 0), 2)
+            # cv2.line(frame, (left_nose_x, left_nose_y - 10), (left_nose_x, left_nose_y + 10), (0, 255, 0), 2)
+            # cv2.line(frame, (right_nose_x - 10, right_nose_y), (right_nose_x + 10, right_nose_y), (0, 255, 0), 2)
+            # cv2.line(frame, (right_nose_x, right_nose_y - 10), (right_nose_x, right_nose_y + 10), (0, 255, 0), 2)
 
             # draw squares around the nose holes
             # half of the side length of the square that includes 100 pixels
@@ -126,7 +126,7 @@ def make_face_detection(frame_bw):
             current_mouth_top_left = (min_mouth_x + x_distance//3,  min_mouth_y + y_distance//3)
             current_mouth_bottom_right = (max_mouth_x - x_distance//3, max_mouth_y - y_distance//3)
             
-            # cv2.rectangle(frame, current_mouth_top_left, current_mouth_bottom_right, (255, 0, 0), 2)
+            cv2.rectangle(frame, current_mouth_top_left, current_mouth_bottom_right, (255, 0, 0), 2)
 
             # # calculate the center of the mouth square
             # mouth_center_x = (min_mouth_x + max_mouth_x) // 2
@@ -147,9 +147,9 @@ def make_face_detection(frame_bw):
 
             # # reduce CPU load
             # time.sleep(0.1)
-    return current_mouth_top_left, current_mouth_bottom_right
 
-    cv2.imshow('Mouth and Nose Detection', frame)
+    # cv2.imshow('Mouth and Nose Detection', frame)
+    return current_mouth_top_left, current_mouth_bottom_right
     if cv2.waitKey(1) & 0xFF == ord('q'):
         pass
 
