@@ -1,5 +1,5 @@
 # Documentation
-In this project we tried to rebuild and improve the interaction technology of ["Gaze Breath: Combining Eye Tracking and Breath Input for Real-time Interaction"](https://dl.acm.org/doi/abs/10.1145/3519391.3519405).
+In this project we tried to rebuild and improve the interaction technology of ["Gaze Breath: Combining Eye Tracking and Breath Input for Real-time Interaction"](https://dl.acm.org/doi/abs/10.1145/3519391.3519405). Here we focused on the interaction via breathing and due to time restraints we did not include any sort of eye tracking.
 
 ![video](/docs/images/live.gif)
 
